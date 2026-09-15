@@ -37,7 +37,7 @@ Senior TypeScript-розробник, що відповідає за читаб�
 
 - [ ] Є нова непублічна функція (без `export`) з назвою, що описує саме
       "розподіл залишку по перших N елементах" (напр.
-      `distributeRemainder`).
+      `distributeRemainderAcrossFirstInstallments`).
 - [ ] `splitInstallments` викликає цю функцію; зовнішня поведінка ідентична
       до рефакторингу (той самий вхід → той самий вихід для всіх існуючих
       тестів).
@@ -57,7 +57,7 @@ Senior TypeScript-розробник, що відповідає за читаб�
 ## Результат реального запуску
 
 Запущено (реальний запуск, не оцінка): виділено функцію
-`distributeRemainder(base, remainder, parts)`, яку викликає
-`splitInstallments`; сигнатура `splitInstallments` і решта файлу не
-змінені; `estimateTotalCents`/`formatMoney` не торкнуто. `cd app && npm
+`distributeRemainderAcrossFirstInstallments(base, parts, remainder)`, яку
+викликає `splitInstallments`; сигнатура `splitInstallments` і решта файлу
+не змінені; `estimateTotalCents`/`formatMoney` не торкнуто. `cd app && npm
 test` — 11 тестів пройдено без змін у тестових файлах.

@@ -36,6 +36,13 @@ describe("estimateTotalCents", () => {
     // округлює вниз до 14, хоча за контрактом ".5 округлюється у бік більшого" -> 15.
     expect(estimateTotalCents({ hours: 0.145, rateCents: 100 })).toBe(15);
   });
+
+  it("коректно округлює рівно .5 центів для від'ємної суми (Math.round(-14.5) === -14)", () => {
+    // hours=-0.5 * rateCents=29 = -14.5 центів рівно, без похибки float.
+    // Знакозалежний epsilon (виправлений після рев'ю) міг зсунути це до -15,
+    // хоча Math.round(-14.5) документовано округлює до -14.
+    expect(estimateTotalCents({ hours: -0.5, rateCents: 29 })).toBe(-14);
+  });
 });
 
 describe("splitInstallments", () => {

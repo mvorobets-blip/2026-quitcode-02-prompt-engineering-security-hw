@@ -1,7 +1,7 @@
 ---
 name: agency-task
 purpose: Перетворити сирий запит клієнта в структурований бриф інтеграції з чіткими acceptance criteria
-tested-on: синтетичний запит клієнта (текстовий приклад нижче, без реальних даних)
+tested-on: prompts/fixtures/agency-task-sample-request.md (синтетичний запит клієнта, без реальних даних)
 version: 1
 ---
 

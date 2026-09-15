@@ -35,23 +35,13 @@ export function estimateTotalCents(input: QuoteInput): number {
   // which made Math.round silently round down instead of up as documented.
   // Nudge by a tiny epsilon (far below one cent) before rounding to correct
   // for that representation error without changing any real rounding case.
-  return Math.round(raw + (raw >= 0 ? 1 : -1) * 1e-9);
+  // The nudge must always point toward +Infinity (not away from zero) to
+  // match Math.round's own negative-tie behavior — Math.round(-14.5) is
+  // -14, so a sign-flipped epsilon would incorrectly push exact negative
+  // ties like -0.5*29=-14.5 down to -15.
+  return Math.round(raw + 1e-9);
 }
 
-/**
- * Розбиває суму (у центах) на `parts` платежів.
- *
- * Оскільки `totalCents` не завжди ділиться націло на `parts`, платежі не
- * обов'язково рівні: береться базова частка `base = Math.floor(totalCents / parts)`,
- * а залишок від ділення (в цілих центах) додається по одному центу до перших
- * `remainder` платежів (вони отримують `base + 1`, решта — `base`). Це гарантує,
- * що сума всіх елементів масиву завжди точно дорівнює `totalCents`, без похибок
- * округлення.
- *
- * @param totalCents - сума до розподілу, у центах
- * @param parts - кількість платежів
- * @returns масив довжиною `parts`, сума елементів якого дорівнює `totalCents`
- */
 /**
  * Розподіляє залишок (у цілих центах) по перших `remainder` елементах масиву
  * базових значень `base`, додаючи по одному центу до кожного з них.
@@ -70,6 +60,20 @@ function distributeRemainderAcrossFirstInstallments(
   return new Array(parts).fill(base).map((v, i) => (i < remainder ? v + 1 : v));
 }
 
+/**
+ * Розбиває суму (у центах) на `parts` платежів.
+ *
+ * Оскільки `totalCents` не завжди ділиться націло на `parts`, платежі не
+ * обов'язково рівні: береться базова частка `base = Math.floor(totalCents / parts)`,
+ * а залишок від ділення (в цілих центах) додається по одному центу до перших
+ * `remainder` платежів (вони отримують `base + 1`, решта — `base`). Це гарантує,
+ * що сума всіх елементів масиву завжди точно дорівнює `totalCents`, без похибок
+ * округлення.
+ *
+ * @param totalCents - сума до розподілу, у центах
+ * @param parts - кількість платежів
+ * @returns масив довжиною `parts`, сума елементів якого дорівнює `totalCents`
+ */
 export function splitInstallments(totalCents: number, parts: number): number[] {
   const base = Math.floor(totalCents / parts);
   const remainder = totalCents - base * parts;
