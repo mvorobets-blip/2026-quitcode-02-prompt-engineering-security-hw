@@ -43,6 +43,25 @@ describe("estimateTotalCents", () => {
     // хоча Math.round(-14.5) документовано округлює до -14.
     expect(estimateTotalCents({ hours: -0.5, rateCents: 29 })).toBe(-14);
   });
+
+  it("рівно .5 на великій сумі округлюється догори (рев'ю 23.11)", () => {
+    // 1024.1 × 20485 = 20978688.5 рівно; у double — 20978688.499999996, епсилон 1e-9 замалий.
+    expect(estimateTotalCents({ hours: 1024.1, rateCents: 20485 })).toBe(20978689);
+  });
+
+  it("значення трохи нижче від'ємної межі .5 не переноситься через неї (рев'ю 23.11)", () => {
+    // -0.50000000001 × 29 = -14.50000000029 → найближче ціле -15; зсув +1e-9 давав -14.
+    expect(estimateTotalCents({ hours: -0.50000000001, rateCents: 29 })).toBe(-15);
+  });
+
+  it("рівно .5 зі знижкою рахується від точного значення", () => {
+    // 1 × 29 × (1 − 50/100) = 14.5 → 15
+    expect(estimateTotalCents({ hours: 1, rateCents: 29, discountPercent: 50 })).toBe(15);
+  });
+
+  it("результат — ціле число без -0", () => {
+    expect(Object.is(estimateTotalCents({ hours: -0.01, rateCents: 29 }), 0)).toBe(true);
+  });
 });
 
 describe("splitInstallments", () => {
@@ -65,6 +84,18 @@ describe("splitInstallments", () => {
     const parts = splitInstallments(2, 5);
     expect(parts.reduce((a, b) => a + b, 0)).toBe(2);
     expect(parts).toEqual([1, 1, 0, 0, 0]);
+  });
+
+  it("відхиляє нецілу суму центів замість створювати гроші (рев'ю 23.11)", () => {
+    // раніше splitInstallments(100.5, 3) → [34, 34, 33], сума 101
+    expect(() => splitInstallments(100.5, 3)).toThrow(RangeError);
+  });
+
+  it("відхиляє parts, що не є додатним цілим (рев'ю 23.11)", () => {
+    // раніше splitInstallments(100, 0) → [] — 100 центів мовчки зникали
+    expect(() => splitInstallments(100, 0)).toThrow(RangeError);
+    expect(() => splitInstallments(100, -1)).toThrow(RangeError);
+    expect(() => splitInstallments(100, 2.5)).toThrow(RangeError);
   });
 });
 

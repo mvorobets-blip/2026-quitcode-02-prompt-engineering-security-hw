@@ -14,7 +14,7 @@
 | [`refactor.md`](./refactor.md) | Безпечний рефакторинг однієї функції без зміни поведінки | `app/src/quote.ts` — виділив `distributeRemainderAcrossFirstInstallments` |
 | [`debug.md`](./debug.md) | Локалізує корінну причину бага за описом симптому (markdown + XML діалект) | `app/src/quote.ts` — той самий баг округлення в `splitInstallments` |
 | [`agency-task.md`](./agency-task.md) | Перетворює сирий запит клієнта на структурований бриф інтеграції | синтетичний запит клієнта (HubSpot + Gmail інтеграція) |
-| [`security-scan.md`](./security-scan.md) | Сканує документ на секрети/PII перед вставкою в AI-модель (v2: три вердикти) | `docs/sanitization-checklist.md` — зловив реальний витік телефону й connection string на "до фіксу" версії; `docs/sanitized-brief.md` — вердикт `БЕЗПЕЧНО ДЛЯ БУДЬ-ЯКОЇ МОДЕЛІ` |
+| [`security-scan.md`](./security-scan.md) | Сканує документ на секрети/PII перед вставкою в AI-модель (v3: 🔴 шукає локальний [`tools/red-scan.mjs`](./tools/red-scan.mjs) без моделі, модель бачить лише замасковану копію; три вердикти) | `docs/sanitization-checklist.md` — зловив реальний витік телефону й connection string на "до фіксу" версії; `docs/sanitized-brief.md` — вердикт `БЕЗПЕЧНО ДЛЯ БУДЬ-ЯКОЇ МОДЕЛІ`; v3 — [прогін](../docs/runs/security-scan-v3-run.md) на `materials/client-brief.md`: 10 🔴 кроком 0, вердикт `НЕ ВСТАВЛЯТИ` |
 | [`review-money.md`](./review-money.md) | Власний промпт рев'ю: диф у коді з грошима, кожна знахідка доведена командою відтворення | `app/src/quote.ts` (диф `8f36e5e` → `a6a8b82`) — 4 дефекти, зокрема епсилон `1e-9` не рятує `.5` на великих сумах; [транскрипт](../docs/runs/review-money-run.md) |
 
 > 7 власних промптів (не рахуючи `_template.md` і стартового `review-pr.md`, за яким

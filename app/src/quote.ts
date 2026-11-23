@@ -14,32 +14,54 @@ export interface QuoteInput {
   discountPercent?: number;
 }
 
+/** Точне десяткове значення скінченного числа JS як `n / 10^scale` (з його найкоротшого запису). */
+function toDecimal(x: number): { n: bigint; scale: number } {
+  if (!Number.isFinite(x)) throw new RangeError(`очікується скінченне число, отримано ${x}`);
+  const m = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/.exec(String(x));
+  if (!m) throw new RangeError(`не вдалося розібрати число ${x}`);
+  const [, sign, int, frac = "", exp = "0"] = m;
+  let digits = int + frac;
+  let scale = frac.length - Number(exp);
+  if (scale < 0) {
+    digits += "0".repeat(-scale);
+    scale = 0;
+  }
+  return { n: BigInt(sign + digits), scale };
+}
+
+/** Ділення з округленням до найближчого цілого, ".5" — у бік +∞ (як `Math.round`); `den > 0`. */
+function roundHalfUp(num: bigint, den: bigint): bigint {
+  const a = 2n * num + den;
+  const b = 2n * den;
+  const q = a / b; // BigInt-ділення відкидає дробову частину до нуля
+  return a % b !== 0n && a < 0n ? q - 1n : q;
+}
+
 /**
  * Розраховує ціну проєкту в центах з урахуванням знижки.
+ *
+ * Рахує точно: кожен вхід береться як десяткове число, яким його записано
+ * (`0.145`, а не двійкове 0.14499999999999999), множення й знижка — у цілих
+ * BigInt, і лише потім одне округлення. Тому межа ".5" не залежить від похибки
+ * float ні на малих, ні на великих сумах.
  *
  * @param input.hours - кількість годин (може бути дробовим, напр. 2.5)
  * @param input.rateCents - ставка за годину, у центах
  * @param input.discountPercent - знижка у відсотках, 0..100 (за замовчуванням 0)
- * @returns підсумкову суму в центах, округлену до найближчого цілого
- *   (`Math.round`, тобто ".5" округлюється у бік більшого).
- *   При discountPercent=0 повертає суму без знижки; при discountPercent=100 — 0.
+ * @returns підсумкову суму в центах — точне `hours × rateCents × (1 − discountPercent/100)`,
+ *   округлене до найближчого цілого, ".5" — у бік більшого (як `Math.round`:
+ *   14.5 → 15, −14.5 → −14). При discountPercent=0 — сума без знижки; при 100 — 0.
  */
 export function estimateTotalCents(input: QuoteInput): number {
   const { hours, rateCents, discountPercent = 0 } = input;
-  const gross = hours * rateCents;
-  const discount = (gross * discountPercent) / 100;
-  const raw = gross - discount;
-  // `hours * rateCents` (and the discount math derived from it) can land a
-  // hair below an exact ".5" boundary due to binary floating-point
-  // representation (e.g. 0.145 * 100 === 14.499999999999998 instead of 14.5),
-  // which made Math.round silently round down instead of up as documented.
-  // Nudge by a tiny epsilon (far below one cent) before rounding to correct
-  // for that representation error without changing any real rounding case.
-  // The nudge must always point toward +Infinity (not away from zero) to
-  // match Math.round's own negative-tie behavior — Math.round(-14.5) is
-  // -14, so a sign-flipped epsilon would incorrectly push exact negative
-  // ties like -0.5*29=-14.5 down to -15.
-  return Math.round(raw + 1e-9);
+  const h = toDecimal(hours);
+  const r = toDecimal(rateCents);
+  const d = toDecimal(discountPercent);
+  // (100 − d) у тих самих одиницях 10^-d.scale
+  const keep = 100n * 10n ** BigInt(d.scale) - d.n;
+  const num = h.n * r.n * keep;
+  const den = 10n ** BigInt(h.scale + r.scale + d.scale) * 100n;
+  return Number(roundHalfUp(num, den)) + 0; // "+ 0" перетворює −0 на 0
 }
 
 /**
@@ -66,15 +88,26 @@ function distributeRemainderAcrossFirstInstallments(
  * Оскільки `totalCents` не завжди ділиться націло на `parts`, платежі не
  * обов'язково рівні: береться базова частка `base = Math.floor(totalCents / parts)`,
  * а залишок від ділення (в цілих центах) додається по одному центу до перших
- * `remainder` платежів (вони отримують `base + 1`, решта — `base`). Це гарантує,
- * що сума всіх елементів масиву завжди точно дорівнює `totalCents`, без похибок
- * округлення.
+ * `remainder` платежів (вони отримують `base + 1`, решта — `base`).
  *
- * @param totalCents - сума до розподілу, у центах
- * @param parts - кількість платежів
+ * Гарантія — сума всіх елементів точно дорівнює `totalCents`, а платежі
+ * відрізняються не більше ніж на 1 цент — діє за передумов, які функція
+ * перевіряє сама: `totalCents` — ціле число центів у межах
+ * `Number.MAX_SAFE_INTEGER`, `parts` — додатне ціле. Інакше — `RangeError`,
+ * а не мовчки хибні гроші.
+ *
+ * @param totalCents - сума до розподілу, ціле число центів (може бути від'ємною — повернення)
+ * @param parts - кількість платежів, додатне ціле
  * @returns масив довжиною `parts`, сума елементів якого дорівнює `totalCents`
+ * @throws {RangeError} якщо `totalCents` не безпечне ціле або `parts` не додатне ціле
  */
 export function splitInstallments(totalCents: number, parts: number): number[] {
+  if (!Number.isSafeInteger(totalCents)) {
+    throw new RangeError(`totalCents має бути цілим числом центів, отримано ${totalCents}`);
+  }
+  if (!Number.isSafeInteger(parts) || parts < 1) {
+    throw new RangeError(`parts має бути додатним цілим, отримано ${parts}`);
+  }
   const base = Math.floor(totalCents / parts);
   const remainder = totalCents - base * parts;
   // Distribute the remainder (in whole cents) across the first `remainder`

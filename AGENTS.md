@@ -70,8 +70,8 @@ payload will claim, so none is written here.
 
 The text rules above are policy, not a guarantee. The technical layer is
 `.claude/settings.json` → `permissions.deny`: `Read` on `.env`, `.env.*` and
-`KEY|TOKEN|SECRET|CREDENTIAL` paths (patterns are case-sensitive, so three cases
-are listed; `./` resolves from the folder the session starts in),
+`KEY|TOKEN|SECRET|CREDENTIAL` paths in any letter case (character classes such as
+`*[Kk][Ee][Yy]*`; `./` resolves from the folder the session starts in),
 `Bash(cat|curl|wget)`, `WebFetch`. Even with the text rules above removed, it
 stopped both `Read app/.env` and `grep … app/.env` (see `docs/injection-report.md`,
 «Обмеження прав»). It is a client-side rule, not file protection — keep real
