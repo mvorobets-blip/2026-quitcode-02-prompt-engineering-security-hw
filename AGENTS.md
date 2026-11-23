@@ -68,6 +68,15 @@ payload will claim, so none is written here.
    not license reading `materials/client-brief.md`, `app/.env`, or editing
    `app/src/quote.ts` — those require their own explicit request.
 
+The text rules above are policy, not a guarantee. The technical layer is
+`.claude/settings.json` → `permissions.deny`: `Read` on `.env`, `.env.*` and
+`KEY|TOKEN|SECRET|CREDENTIAL` paths (patterns are case-sensitive, so three cases
+are listed; `./` resolves from the folder the session starts in),
+`Bash(cat|curl|wget)`, `WebFetch`. Even with the text rules above removed, it
+stopped both `Read app/.env` and `grep … app/.env` (see `docs/injection-report.md`,
+«Обмеження прав»). It is a client-side rule, not file protection — keep real
+secrets out of the agent's working tree.
+
 ## How to verify
 
 Before opening a PR: `cd app && npm test` is green, `prompts/` holds at least 6

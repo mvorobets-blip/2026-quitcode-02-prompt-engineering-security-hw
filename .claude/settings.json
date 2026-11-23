@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./**/*KEY*)",
+      "Read(./**/*key*)",
+      "Read(./**/*Key*)",
+      "Read(./**/*TOKEN*)",
+      "Read(./**/*token*)",
+      "Read(./**/*Token*)",
+      "Read(./**/*SECRET*)",
+      "Read(./**/*secret*)",
+      "Read(./**/*Secret*)",
+      "Read(./**/*CREDENTIAL*)",
+      "Read(./**/*credential*)",
+      "Read(./**/*Credential*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "WebFetch"
+    ]
+  }
+}

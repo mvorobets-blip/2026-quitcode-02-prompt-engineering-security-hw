@@ -9,17 +9,17 @@
 | Промпт | Що робить | Перевірено на |
 |---|---|---|
 | [`review-pr.md`](./review-pr.md) | Рев'ю дифу перед мержем (приклад-планка) | `app/src/quote.ts` |
-| [`add-tests.md`](./add-tests.md) | Додає тести на крайові випадки, знаходить реальні вади | `app/src/quote.ts` — знайшов і виправив баг округлення в `splitInstallments` |
+| [`add-tests.md`](./add-tests.md) | Додає тести на крайові випадки, знаходить реальні вади | `app/src/quote.ts` — знайшов і виправив баг округлення в `splitInstallments`; поруч — [прогін слабкого промпту](../docs/runs/weak-prompt-run.md) і [meta-prompting](../docs/runs/meta-prompting-add-tests.md) |
 | [`write-docs.md`](./write-docs.md) | Оновлює doc-коментарі та README модуля | `app/src/quote.ts`, `app/README.md` |
 | [`refactor.md`](./refactor.md) | Безпечний рефакторинг однієї функції без зміни поведінки | `app/src/quote.ts` — виділив `distributeRemainderAcrossFirstInstallments` |
 | [`debug.md`](./debug.md) | Локалізує корінну причину бага за описом симптому (markdown + XML діалект) | `app/src/quote.ts` — той самий баг округлення в `splitInstallments` |
 | [`agency-task.md`](./agency-task.md) | Перетворює сирий запит клієнта на структурований бриф інтеграції | синтетичний запит клієнта (HubSpot + Gmail інтеграція) |
-| [`security-scan.md`](./security-scan.md) | Сканує документ на секрети/PII перед вставкою в AI-модель | `docs/sanitization-checklist.md` — зловив реальний витік телефону й connection string на "до фіксу" версії, дав `БЕЗПЕЧНО ВСТАВЛЯТИ` на поточній |
+| [`security-scan.md`](./security-scan.md) | Сканує документ на секрети/PII перед вставкою в AI-модель (v2: три вердикти) | `docs/sanitization-checklist.md` — зловив реальний витік телефону й connection string на "до фіксу" версії; `docs/sanitized-brief.md` — вердикт `БЕЗПЕЧНО ДЛЯ БУДЬ-ЯКОЇ МОДЕЛІ` |
+| [`review-money.md`](./review-money.md) | Власний промпт рев'ю: диф у коді з грошима, кожна знахідка доведена командою відтворення | `app/src/quote.ts` (диф `8f36e5e` → `a6a8b82`) — 4 дефекти, зокрема епсилон `1e-9` не рятує `.5` на великих сумах; [транскрипт](../docs/runs/review-money-run.md) |
 
-> 6 власних промптів (не рахуючи `_template.md` і `review-pr.md`, за яким
-> звіряємось як прикладом-планкою): тести, документація, рефакторинг, дебаг,
-> задача агенції, security-скан. Разом з `review-pr.md` покрито й категорію
-> "рев'ю". `debug.md` існує у двох діалектах (markdown і XML) — див. нижню
+> 7 власних промптів (не рахуючи `_template.md` і стартового `review-pr.md`, за яким
+> звіряємось як прикладом-планкою): тести, рев'ю (`review-money.md`), документація,
+> рефакторинг, дебаг, задача агенції, security-скан. `debug.md` існує у двох діалектах (markdown і XML) — див. нижню
 > частину файлу для порівняння.
 
 ## Task D (бонус) — промпт → slash-команда
