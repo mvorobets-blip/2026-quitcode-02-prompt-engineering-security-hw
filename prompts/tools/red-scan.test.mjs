@@ -11,6 +11,16 @@ import { fileURLToPath } from "node:url";
 // fileURLToPath, а не .pathname: шлях із пробілом чи кирилицею інакше лишився б percent-encoded.
 const script = fileURLToPath(new URL("./red-scan.mjs", import.meta.url));
 
+// Синтетичні значення збираємо з частин під час тесту: у файлі немає рядка, схожого на справжній креденшел,
+// тож сканери секретів репозиторію (GitGuardian) його не позначають, а scan() отримує повне значення.
+const fake = (...parts) => parts.join("");
+const CRM_KEY = fake("demo", "Credential", "12345");
+const SERVICE = fake("abcd", "1234", "efgh");
+const DB_PASS = fake("Sup3r", "S3cret", "!");
+const JWT_LIKE = fake("eyJ", "hbGciOi", "JIUzI1NiJ9", ".abc.def");
+const BASIC = Buffer.from(fake("us", "er:", "pass", "word")).toString("base64");
+const BEARER = fake("abcdefgh", "ijklmnop", "1234");
+
 function scan(text) {
   const dir = mkdtempSync(join(tmpdir(), "red-scan-"));
   const input = join(dir, "in.md");
@@ -45,17 +55,24 @@ test("рядок таблиці | token | значення | — маскуєт�
 });
 
 test("складені імена змінних: CRM_API_KEY=…, SERVICE_TOKEN: …, db-password=… (повторне рев'ю 25.11)", () => {
-  const { code, masked } = scan("CRM_API_KEY=demoCredential12345\nSERVICE_TOKEN: abcd1234efgh\ndb-password=Sup3rS3cret!");
+  const { code, masked } = scan(`CRM_API_KEY=${CRM_KEY}\nSERVICE_TOKEN: ${SERVICE}\ndb-password=${DB_PASS}`);
   assert.equal(code, 1);
-  assert.doesNotMatch(masked, /demoCredential12345|abcd1234efgh|Sup3rS3cret/);
+  for (const value of [CRM_KEY, SERVICE, DB_PASS]) assert.ok(!masked.includes(value), value);
 });
 
 test("заголовок Authorization: Bearer / Basic і окремий Bearer-токен (повторне рев'ю 25.11)", () => {
   const { code, masked } = scan(
-    "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abc.def\nAuthorization: Basic dXNlcjpwYXNzd29yZA==\ncurl -H \"Bearer abcdefghijklmnop1234\"",
+    `Authorization: Bearer ${JWT_LIKE}\nAuthorization: Basic ${BASIC}\ncurl -H "Bearer ${BEARER}"`,
   );
   assert.equal(code, 1);
-  assert.doesNotMatch(masked, /eyJhbGciOiJIUzI1NiJ9|dXNlcjpwYXNzd29yZA|abcdefghijklmnop1234/);
+  for (const value of [JWT_LIKE, BASIC, BEARER]) assert.ok(!masked.includes(value), value);
+});
+
+test("значення-фраза з Bearer у клітинці пароля маскується повністю (рев'ю 25.11, третій прохід)", () => {
+  const tail = fake("tail", "phrase", "9876");
+  const { code, masked } = scan(`| password | "Bearer ${BEARER} ${tail}" |`);
+  assert.equal(code, 1);
+  assert.ok(!masked.includes(BEARER) && !masked.includes(tail), masked);
 });
 
 test("слова на кшталт keyboard / tokenizer і плейсхолдер Bearer <TOKEN> не рахуються", () => {
