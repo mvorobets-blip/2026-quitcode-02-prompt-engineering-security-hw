@@ -6,8 +6,10 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const script = new URL("./red-scan.mjs", import.meta.url).pathname;
+// fileURLToPath, а не .pathname: шлях із пробілом чи кирилицею інакше лишився б percent-encoded.
+const script = fileURLToPath(new URL("./red-scan.mjs", import.meta.url));
 
 function scan(text) {
   const dir = mkdtempSync(join(tmpdir(), "red-scan-"));
@@ -40,6 +42,25 @@ test("рядок таблиці | token | значення | — маскуєт�
   const { masked } = scan("| token | abcd1234efgh5678 | для CI |");
   assert.doesNotMatch(masked, /abcd1234efgh5678/);
   assert.match(masked, /для CI/);
+});
+
+test("складені імена змінних: CRM_API_KEY=…, SERVICE_TOKEN: …, db-password=… (повторне рев'ю 25.11)", () => {
+  const { code, masked } = scan("CRM_API_KEY=demoCredential12345\nSERVICE_TOKEN: abcd1234efgh\ndb-password=Sup3rS3cret!");
+  assert.equal(code, 1);
+  assert.doesNotMatch(masked, /demoCredential12345|abcd1234efgh|Sup3rS3cret/);
+});
+
+test("заголовок Authorization: Bearer / Basic і окремий Bearer-токен (повторне рев'ю 25.11)", () => {
+  const { code, masked } = scan(
+    "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abc.def\nAuthorization: Basic dXNlcjpwYXNzd29yZA==\ncurl -H \"Bearer abcdefghijklmnop1234\"",
+  );
+  assert.equal(code, 1);
+  assert.doesNotMatch(masked, /eyJhbGciOiJIUzI1NiJ9|dXNlcjpwYXNzd29yZA|abcdefghijklmnop1234/);
+});
+
+test("слова на кшталт keyboard / tokenizer і плейсхолдер Bearer <TOKEN> не рахуються", () => {
+  const { code } = scan("keyboard: mechanical-switches\ntokenizer = whitespace-splitter\nAuthorization: Bearer <TOKEN>");
+  assert.equal(code, 0);
 });
 
 test("плейсхолдери й уже замасковане не рахуються", () => {
