@@ -51,6 +51,8 @@ function roundHalfUp(num: bigint, den: bigint): bigint {
  * @returns підсумкову суму в центах — точне `hours × rateCents × (1 − discountPercent/100)`,
  *   округлене до найближчого цілого, ".5" — у бік більшого (як `Math.round`:
  *   14.5 → 15, −14.5 → −14). При discountPercent=0 — сума без знижки; при 100 — 0.
+ * @throws {RangeError} якщо точний результат не вміщується в безпечне ціле `number`
+ *   (|результат| > `Number.MAX_SAFE_INTEGER`): інакше `Number(...)` мовчки змінив би суму.
  */
 export function estimateTotalCents(input: QuoteInput): number {
   const { hours, rateCents, discountPercent = 0 } = input;
@@ -61,7 +63,11 @@ export function estimateTotalCents(input: QuoteInput): number {
   const keep = 100n * 10n ** BigInt(d.scale) - d.n;
   const num = h.n * r.n * keep;
   const den = 10n ** BigInt(h.scale + r.scale + d.scale) * 100n;
-  return Number(roundHalfUp(num, den)) + 0; // "+ 0" перетворює −0 на 0
+  const cents = roundHalfUp(num, den);
+  if (cents > BigInt(Number.MAX_SAFE_INTEGER) || cents < -BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError(`сума ${cents} центів поза межами безпечного цілого number`);
+  }
+  return Number(cents) + 0; // "+ 0" перетворює −0 на 0
 }
 
 /**
@@ -86,7 +92,7 @@ function distributeRemainderAcrossFirstInstallments(
  * Розбиває суму (у центах) на `parts` платежів.
  *
  * Оскільки `totalCents` не завжди ділиться націло на `parts`, платежі не
- * обов'язково рівні: береться базова частка `base = Math.floor(totalCents / parts)`,
+ * обов'язково рівні: береться базова частка `base = ⌊totalCents / parts⌋` (рахується в BigInt),
  * а залишок від ділення (в цілих центах) додається по одному центу до перших
  * `remainder` платежів (вони отримують `base + 1`, решта — `base`).
  *
@@ -108,8 +114,18 @@ export function splitInstallments(totalCents: number, parts: number): number[] {
   if (!Number.isSafeInteger(parts) || parts < 1) {
     throw new RangeError(`parts має бути додатним цілим, отримано ${parts}`);
   }
-  const base = Math.floor(totalCents / parts);
-  const remainder = totalCents - base * parts;
+  // База й залишок — у BigInt: біля ±Number.MAX_SAFE_INTEGER добуток base * parts у double вже не точний
+  // (−9007199254740993 округлюється), і залишок, а з ним і сума платежів, зсунулися б на цент.
+  const total = BigInt(totalCents);
+  const count = BigInt(parts);
+  let q = total / count; // ділення BigInt відкидає дробову частину до нуля
+  let r = total % count;
+  if (r < 0n) {
+    q -= 1n; // floor для від'ємних
+    r += count;
+  }
+  const base = Number(q); // |q| ≤ |totalCents| — безпечне ціле
+  const remainder = Number(r); // 0 ≤ r < parts
   // Distribute the remainder (in whole cents) across the first `remainder`
   // installments so the sum of all parts always equals totalCents exactly.
   return distributeRemainderAcrossFirstInstallments(base, parts, remainder);

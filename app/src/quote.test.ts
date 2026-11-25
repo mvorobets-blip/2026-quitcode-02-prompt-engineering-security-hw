@@ -64,6 +64,17 @@ describe("estimateTotalCents", () => {
   });
 });
 
+describe("estimateTotalCents — межі number", () => {
+  it("результат поза безпечним цілим — RangeError, а не мовчки змінена сума (рев'ю 25.11)", () => {
+    // Точно 27021597764222973 центи; Number(...) дав би …972.
+    expect(() => estimateTotalCents({ hours: Number.MAX_SAFE_INTEGER, rateCents: 3 })).toThrow(RangeError);
+  });
+
+  it("результат рівно MAX_SAFE_INTEGER ще повертається", () => {
+    expect(estimateTotalCents({ hours: Number.MAX_SAFE_INTEGER, rateCents: 1 })).toBe(Number.MAX_SAFE_INTEGER);
+  });
+});
+
 describe("splitInstallments", () => {
   it("ділить суму, що ділиться націло", () => {
     expect(splitInstallments(90000, 3)).toEqual([30000, 30000, 30000]);
@@ -89,6 +100,18 @@ describe("splitInstallments", () => {
   it("відхиляє нецілу суму центів замість створювати гроші (рев'ю 23.11)", () => {
     // раніше splitInstallments(100.5, 3) → [34, 34, 33], сума 101
     expect(() => splitInstallments(100.5, 3)).toThrow(RangeError);
+  });
+
+  it("від'ємна сума біля −MAX_SAFE_INTEGER ділиться точно: сума платежів = totalCents (рев'ю 25.11)", () => {
+    const parts = splitInstallments(-Number.MAX_SAFE_INTEGER, 3);
+    expect(parts).toEqual([-3002399751580330, -3002399751580330, -3002399751580331]);
+    expect(parts.reduce((a, b) => a + b, 0)).toBe(-Number.MAX_SAFE_INTEGER);
+  });
+
+  it("додатна сума MAX_SAFE_INTEGER ділиться точно (рев'ю 25.11)", () => {
+    const parts = splitInstallments(Number.MAX_SAFE_INTEGER, 7);
+    expect(parts.reduce((a, b) => a + b, 0)).toBe(Number.MAX_SAFE_INTEGER);
+    expect(Math.max(...parts) - Math.min(...parts)).toBeLessThanOrEqual(1);
   });
 
   it("відхиляє parts, що не є додатним цілим (рев'ю 23.11)", () => {
