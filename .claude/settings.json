@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./**/*[Kk][Ee][Yy]*)",
+      "Read(./**/*[Tt][Oo][Kk][Ee][Nn]*)",
+      "Read(./**/*[Ss][Ee][Cc][Rr][Ee][Tt]*)",
+      "Read(./**/*[Cc][Rr][Ee][Dd][Ee][Nn][Tt][Ii][Aa][Ll]*)",
+      "Bash(cat:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "WebFetch"
+    ]
+  }
+}
