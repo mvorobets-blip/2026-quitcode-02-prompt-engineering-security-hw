@@ -27,11 +27,11 @@ const PATTERNS = [
     "SECRET_VALUE",
     /(?<![A-Za-z0-9])(?:[A-Za-z0-9]+[_-])*(?:api[ _-]?key|key|token|secret|password|passwd)(?:[_-][A-Za-z0-9]+)*(?![A-Za-z0-9])(?:["']?[^|\n]{0,40}?[:=]|[\s"'`]*\|)\s*(?:"(?![<•*])[^"\n]{4,}"|'(?![<•*])[^'\n]{4,}'|`(?![<•*])[^`\n]{4,}`|(?![<"'`•*])[A-Za-z0-9_\-.+/=!@#$%^&*~]{8,}[^|\n]*?(?=\s*(?:\||$)))/gim,
   ],
-  // Заголовок авторизації (Authorization: Bearer|Basic|Token …) і окремий «Bearer <токен>» — значення без слова
+  // Заголовок авторизації (Authorization: Bearer|Basic|Token …, і в JSON — "Authorization":"…") і окремий «Bearer <токен>» — значення без слова
   // ПІСЛЯ SECRET_VALUE: інакше в клітинці пароля «Bearer <токен> фраза» Bearer замаскував би лише токен, а повне
   // значення вже починалося б з <RED:…> і решта фрази лишилась би в копії (рев'ю CodeRabbit 25.11, третій прохід).
   // key/token поруч, тож SECRET_VALUE їх не бачить (повторне рев'ю CodeRabbit 25.11).
-  ["AUTH_HEADER", /\bAuthorization\s*[:=]\s*["']?(?:Bearer|Basic|Token)\s+(?![<•*])[A-Za-z0-9\-._~+/]{8,}=*/gi],
+  ["AUTH_HEADER", /\bAuthorization["']?\s*[:=]\s*["']?(?:Bearer|Basic|Token)\s+(?![<•*])[A-Za-z0-9\-._~+/]{8,}=*/gi],
   ["BEARER_TOKEN", /\bBearer\s+(?![<•*])[A-Za-z0-9\-._~+/]{16,}=*/g],
   ["URL_WITH_CREDENTIALS", /\bhttps?:\/\/[^\s:@/`'"]+:(?![•*xX]+@)[^\s@`'"]+@[^\s`'"]+/gi],
   // адреса на голому документаційному домені (contact1@example.test, RFC 2606) — плейсхолдер;

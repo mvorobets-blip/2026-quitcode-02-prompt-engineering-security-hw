@@ -68,6 +68,12 @@ test("заголовок Authorization: Bearer / Basic і окремий Bearer-
   for (const value of [JWT_LIKE, BASIC, BEARER]) assert.ok(!masked.includes(value), value);
 });
 
+test("заголовок Authorization у JSON-формі: {\"Authorization\":\"Basic …\"} (рев'ю 26.11)", () => {
+  const { code, masked } = scan(`{"Authorization":"Basic ${BASIC}"}\n{"authorization": "Token ${SERVICE}"}`);
+  assert.equal(code, 1);
+  for (const value of [BASIC, SERVICE]) assert.ok(!masked.includes(value), value);
+});
+
 test("значення-фраза з Bearer у клітинці пароля маскується повністю (рев'ю 25.11, третій прохід)", () => {
   const tail = fake("tail", "phrase", "9876");
   const { code, masked } = scan(`| password | "Bearer ${BEARER} ${tail}" |`);
